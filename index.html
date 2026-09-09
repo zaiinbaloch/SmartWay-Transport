@@ -40,6 +40,7 @@
 
       .table-slider-container {
         overflow-x: auto;
+        overflow-y: visible;
         padding-bottom: 12px;
         width: 100%;
       }
@@ -1070,9 +1071,9 @@
             </div>
 
             <div
-              id="dashboard-table-panel"
-              class="bg-white border border-slate-200 rounded-2xl shadow-sm w-full overflow-hidden flex flex-col"
-            >
+            id="dashboard-table-panel"
+            class="bg-white border border-slate-200 rounded-2xl shadow-sm w-full overflow-visible flex flex-col"
+          >
               <div
                 class="p-5 border-b border-slate-200 bg-slate-50/50 shrink-0 flex justify-between items-center"
               >
@@ -2523,7 +2524,7 @@
           const tr = document.createElement("tr");
 
           tr.className =
-            "hover:bg-slate-50 transition-all font-medium border-b border-slate-100 text-slate-800";
+            "hover:bg-slate-50 transition-all font-medium border-b border-slate-100 text-slate-800 relative hover:z-20";
 
           const rideDateTime = getRideDateTime(b);
           const isOverdue =
@@ -2543,70 +2544,31 @@
           } else if (b.status === "CANCELLED") {
             statusStyle = "bg-rose-50 text-rose-700 border border-rose-200";
           }
-          let actionBtns = "";
+          let actionList = "";
 
-          /*
-           * SUPER ADMIN:
-           * Full ride management.
-           */
           if (isSuperAdmin) {
-            actionBtns += `
-                <button
-                    onclick="openBookingModal('${b.id}')"
-                    class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold hover:bg-slate-50">
-                    Edit
-                </button>
-            `;
-
-            actionBtns += `
-                <button
-                    onclick="deleteBooking('${b.id}', '${(b.passengerName || "").replace(/'/g, "\\'")}')"
-                    class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[10px] font-bold hover:bg-rose-100">
-                    Delete
-                </button>
-            `;
-
+            actionList += `<button onclick="openBookingModal('${b.id}')" class="w-full text-left px-4 py-2 text-[11px] font-bold text-indigo-600 hover:bg-slate-50 transition-colors">✏️ Edit Booking</button>`;
+            actionList += `<button onclick="deleteBooking('${b.id}', '${(b.passengerName || "").replace(/'/g, "\\'")}')" class="w-full text-left px-4 py-2 text-[11px] font-bold text-rose-600 hover:bg-rose-50 transition-colors">🗑️ Delete</button>`;
             if (b.status === "PENDING") {
-              actionBtns += `
-                    <button
-                        onclick="toggleStatus('${b.id}', 'COMPLETED')"
-                        class="px-2 py-1 bg-emerald-600 text-white rounded text-[10px] font-bold">
-                        Complete
-                    </button>
-
-                    <button
-                        onclick="toggleStatus('${b.id}', 'CANCELLED')"
-                        class="px-2 py-1 bg-rose-600 text-white rounded text-[10px] font-bold">
-                        Cancel
-                    </button>
-                `;
+              actionList += `<button onclick="toggleStatus('${b.id}', 'COMPLETED')" class="w-full text-left px-4 py-2 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 transition-colors">✅ Mark Completed</button>`;
+              actionList += `<button onclick="toggleStatus('${b.id}', 'CANCELLED')" class="w-full text-left px-4 py-2 text-[11px] font-bold text-amber-700 hover:bg-amber-50 transition-colors">🚫 Cancel Ride</button>`;
             }
           } else if (isBrandAdmin) {
-            /*
-             * BRAND ADMIN:
-             * Can edit rides belonging to their own brand.
-             * Cannot complete or cancel rides (restricted to Super Admin).
-             */
-            actionBtns += `
-                <button
-                    onclick="openBookingModal('${b.id}')"
-                    class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold hover:bg-slate-50">
-                    Edit
-                </button>
-            `;
+            actionList += `<button onclick="openBookingModal('${b.id}')" class="w-full text-left px-4 py-2 text-[11px] font-bold text-indigo-600 hover:bg-slate-50 transition-colors">✏️ Edit Booking</button>`;
           }
 
-          /*
-           * Voucher remains available for admin-level users.
-           */
-          actionBtns += `
-            <button
-                onclick="compilePrintVoucher('${b.id}')"
-                class="px-2 py-1 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded text-[10px] font-bold">
-                Voucher
-            </button>
-        `;
+          actionList += `<button onclick="compilePrintVoucher('${b.id}')" class="w-full text-left px-4 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition-colors">📄 Print Voucher</button>`;
 
+          let actionBtns = `
+            <div class="group/dropdown relative inline-block text-left">
+              <button class="px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-700 font-bold rounded-lg hover:bg-slate-200 flex items-center gap-1 transition-all">
+                <span class="text-[8px]">🖋️</span>
+              </button>
+              <div class="absolute right-0 mt-1 w-36 bg-white border border-slate-200 rounded-xl shadow-2xl opacity-0 invisible group-hover/dropdown:opacity-100 group-hover/dropdown:visible transition-all z-[9999] flex flex-col py-1 overflow-hidden">
+                ${actionList}
+              </div>
+            </div>
+          `;
           tr.innerHTML = `
             <td class="p-4 font-bold text-slate-500 border-r border-slate-100">
                 ${b.brandScope || ""}
@@ -3414,8 +3376,15 @@
           let adminBtnsHtml = "";
           if (currentSessionUser?.role === "SUPER_ADMIN") {
             adminBtnsHtml = `
-              <button onclick="openDriverEditModal('${driverIdKey}')" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2 py-1 rounded text-[9px] font-bold uppercase ml-2 border border-indigo-100">✏️ Edit</button>
-              <button onclick="deleteDriver('${driverIdKey}', '${d.name}')" class="text-red-500 hover:text-red-700 bg-red-50 px-2 py-1 rounded text-[9px] font-bold uppercase ml-1 border border-red-100">🗑️ Delete</button>
+              <div class="group relative inline-block text-left ml-3 align-middle">
+                <button class="px-2 py-1 bg-slate-100 border border-slate-200 text-slate-600 font-bold rounded-lg hover:bg-slate-200 text-[10px] flex items-center gap-1 transition-all">
+                  <span class="text-[8px]">🖋️</span>
+                </button>
+                <div class="absolute left-0 mt-1 w-32 bg-white border border-slate-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 flex flex-col py-1 overflow-hidden">
+                  <button onclick="openDriverEditModal('${driverIdKey}')" class="w-full text-left px-4 py-2 text-[11px] hover:bg-slate-50 text-indigo-600 font-bold">✏️ Edit Profile</button>
+                  <button onclick="deleteDriver('${driverIdKey}', '${d.name}')" class="w-full text-left px-4 py-2 text-[11px] hover:bg-rose-50 text-rose-600 font-bold">🗑️ Delete</button>
+                </div>
+              </div>
             `;
           }
 
@@ -3557,24 +3526,36 @@
         }
         brandsDataRegistry.forEach((b) => {
           let safePhoto = b.photo_url || "https://via.placeholder.com/40";
-          let adminActionBtns = "";
+          let actionList = `<button onclick="openBrandPortalById('${b.id}')" class="w-full text-left px-4 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition-colors">👥 Manage & Invite</button>`;
+          
           if (currentSessionUser?.role === "SUPER_ADMIN") {
-            adminActionBtns = `
-              <button onclick="openBrandEditModal('${b.id}')" class="px-2 py-1 bg-white border border-slate-200 text-indigo-600 font-bold rounded hover:bg-slate-50 ml-1.5">✏️ Edit</button>
-              <button onclick="deleteBrand('${b.id}', '${b.name}')" class="px-2 py-1 bg-red-50 text-red-600 border border-red-200 font-bold rounded hover:bg-red-100 ml-1">🗑️ Delete</button>
+            actionList += `
+              <button onclick="openBrandEditModal('${b.id}')" class="w-full text-left px-4 py-2 text-[11px] font-bold text-indigo-600 hover:bg-slate-50 transition-colors">✏️ Edit Brand</button>
+              <button onclick="deleteBrand('${b.id}', '${b.name}')" class="w-full text-left px-4 py-2 text-[11px] font-bold text-rose-600 hover:bg-rose-50 transition-colors">🗑️ Delete</button>
             `;
           }
+
+          let actionBtns = `
+            <div class="group relative inline-block text-left">
+              <button class="px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-700 font-bold rounded-lg hover:bg-slate-200 flex items-center gap-1 transition-all mx-auto">
+                <span class="text-[8px]">🖋️</span>
+              </button>
+              <div class="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 flex flex-col py-1 overflow-hidden">
+                ${actionList}
+              </div>
+            </div>
+          `;
+
           tbody.innerHTML += `
-                    <tr class="border-b font-medium hover:bg-slate-50">
-                        <td class="p-4"><img src="${safePhoto}" class="w-10 h-10 rounded-xl object-contain border bg-slate-50 shadow-sm" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=Brand&background=4f46e5&color=fff&rounded=true&size=128'"></td>
-                        <td class="p-4 font-bold text-slate-900">${b.name}</td>
-                        <td class="p-4 font-mono text-slate-600">${b.contact_info || "N/A"}</td>
-                        <td class="p-4 text-center">
-                            <button onclick="openBrandPortalById('${b.id}')" class="px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold rounded-lg hover:bg-indigo-100">Manage & Invite</button>
-                            ${adminActionBtns}
-                        </td>
-                    </tr>
-                `;
+            <tr class="border-b font-medium hover:bg-slate-50">
+                <td class="p-4"><img src="${safePhoto}" class="w-10 h-10 rounded-xl object-contain border bg-slate-50 shadow-sm" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=Brand&background=4f46e5&color=fff&rounded=true&size=128'"></td>
+                <td class="p-4 font-bold text-slate-900">${b.name}</td>
+                <td class="p-4 font-mono text-slate-600">${b.contact_info || "N/A"}</td>
+                <td class="p-4 text-center overflow-visible">
+                    ${actionBtns}
+                </td>
+            </tr>
+          `;
         });
       }
 
@@ -4028,26 +4009,43 @@
           else
             statusHtml = `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-[10px] font-bold">APPROVED</span>`;
 
-          let actionBtn = "";
+          let actionList = "";
+          
           if (currentSessionUser?.role === "SUPER_ADMIN") {
-            if (u.status === "PENDING")
-              actionBtn += `<button onclick="approveUserAccount('${u.email}')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-[10px]">Approve</button> `;
+            if (u.status === "PENDING") {
+              actionList += `<button onclick="approveUserAccount('${u.email}')" class="w-full text-left px-4 py-2 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 transition-colors">✅ Approve User</button>`;
+            }
             if (u.email !== currentSessionUser.email) {
-              actionBtn += `<button onclick="terminateUser('${u.email}')" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded text-[10px] ml-1">Terminate</button>`;
-            } else {
-              actionBtn += `<span class="text-[10px] text-slate-400 font-bold uppercase">Super Admin</span>`;
+              actionList += `<button onclick="terminateUser('${u.email}')" class="w-full text-left px-4 py-2 text-[11px] font-bold text-rose-600 hover:bg-rose-50 transition-colors">🗑️ Terminate Access</button>`;
             }
           }
 
+          let actionDisplay = "";
+          if (actionList !== "") {
+            actionDisplay = `
+              <div class="group relative inline-block text-left">
+                <button class="px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-700 font-bold rounded-lg hover:bg-slate-200 flex items-center gap-1 transition-all mx-auto">
+                  <span class="text-[8px]">🖋️</span>
+                </button>
+                <div class="absolute right-0 mt-1 w-44 bg-white border border-slate-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 flex flex-col py-1 overflow-hidden">
+                  ${actionList}
+                </div>
+              </div>`;
+          } else if (u.email === currentSessionUser?.email && currentSessionUser?.role === "SUPER_ADMIN") {
+            actionDisplay = `<span class="text-[10px] text-slate-400 font-bold uppercase">Super Admin</span>`;
+          } else {
+            actionDisplay = `<span class="text-[10px] text-slate-400 italic">No Actions</span>`;
+          }
+
           tbody.innerHTML += `
-                    <tr class="border-b">
-                        <td class="p-3 font-bold">${u.email}</td>
-                        <td class="p-3">${u.name}</td>
-                        <td class="p-3 font-bold text-indigo-600">${u.role}</td>
-                        <td class="p-3">${u.brand}</td>
-                        <td class="p-3 text-center">${statusHtml}</td>
-                        <td class="p-3 text-center whitespace-nowrap">${actionBtn}</td>
-                    </tr>`;
+            <tr class="border-b hover:bg-slate-50">
+                <td class="p-3 font-bold text-slate-900">${u.email}</td>
+                <td class="p-3">${u.name}</td>
+                <td class="p-3 font-bold text-indigo-600">${u.role}</td>
+                <td class="p-3">${u.brand}</td>
+                <td class="p-3 text-center">${statusHtml}</td>
+                <td class="p-3 text-center overflow-visible">${actionDisplay}</td>
+            </tr>`;
         });
       }
 
