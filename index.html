@@ -116,6 +116,35 @@
   </head>
   <body class="bg-[#f8fafc]" onload="initAppEnvironment()">
     <script>
+      // Inactivity Auto-Logout Configuration (15 Minutes)
+let idleTimer = null;
+const IDLE_TIMEOUT_LIMIT = 15 * 60 * 1000; // 15 minutes in milliseconds
+
+function resetInactivityTimer() {
+    // Only track idle time if a user is actively logged in
+    if (!currentSessionUser) return;
+
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+        // Trigger logout when time expires
+        alert("Session logout due to no activity.");
+        handleLogout();
+    }, IDLE_TIMEOUT_LIMIT);
+}
+
+// Listen for common user interaction events to reset the idle clock
+['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(event => {
+    window.addEventListener(event, resetInactivityTimer, true);
+});
+
+// Initialize timer when the app environment loads
+const originalInitAppEnv = window.initAppEnvironment;
+window.initAppEnvironment = async function() {
+    if (typeof originalInitAppEnv === 'function') {
+        await originalInitAppEnv();
+    }
+    resetInactivityTimer();
+};
       let supabaseClient = null;
       if (
         typeof SUPABASE_URL !== "undefined" &&
